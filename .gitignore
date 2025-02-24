@@ -1,0 +1,4 @@
+# Ignoruj pliki i foldery
+build/
+*.env
+*.log
