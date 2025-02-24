@@ -224,47 +224,64 @@ int clean_name(char *tmp_path, char *opath)
    return(OK);
 }
 /* *********************************************************************** */
-FILE *open_file(char *filename, const char*extension, const char *access)
+FILE *open_file(char *filename, const char* extension, const char *access)
 {
-  char string[MAX_STR_LEN];
-  FILE *strm = NULL;
+    char buffer[MAX_STR_LEN];
+    FILE *strm = NULL;
 
-  if(filename[0]=='\0')
-   {
-      printf("\n INPUT FILENAME (%s) > ",access);
-      fgets(string,MAX_STR_LEN,stdin);
-      sscanf(string,"%s",filename);
-      printf(" FILE %s opened \n", filename);
-   }
-   int len=strlen(filename);
+    // If the filename is empty, ask the user for it.
+    if(filename[0]=='\0')
+    {
+        printf("\n INPUT FILENAME (%s) > ", access);
+        if(fgets(buffer, MAX_STR_LEN, stdin) != NULL)
+        {
+            sscanf(buffer, "%s", filename);
+            printf(" FILE %s opened \n", filename);
+        }
+    }
+    
+    int len = strlen(filename);
+    if(len + strlen(extension) >= MAX_STR_LEN)
+    {
+        printf("\n ERROR: String length of %s.%s exceeds maximum", filename, extension);
+        return NULL;
+    }
+    
+    // Allocate a temporary string to build the full filename.
+    int filenameLength = len + strlen(extension) + 1;
+    char *filename1 = new char[filenameLength];
+    strcpy(filename1, filename); // copy the base filename
 
-   if( len + strlen(extension) >= MAX_STR_LEN)
-   {
-      printf("\n ERROR: String Length  of %s.%s Exceeds Maximum",
-              filename, extension);
-      return(NULL);
-   }
+    // Check if the base filename already ends with the given extension.
+    bool hasExtension = false;
+    for (int i = len - 1; i >= 0; i--)
+    {
+        if (filename1[i] == '.')
+        {
+            // Compare the substring starting at the dot to the extension.
+            if(strcmp(filename1 + i, extension) == 0)
+            {
+                hasExtension = true;
+            }
+            break;
+        }
+    }
+    // If the extension is not present, append it.
+    if (!hasExtension)
+    {
+        strcat(filename1, extension);
+    }
 
-   // char *filename1 = new(char[len+strlen(extension)+1]);
-
-   const int filenameLength = len+strlen(extension)+1;
-   char *filename1 = new char[filenameLength] ;
-
-   strcpy(filename1,filename); // temp filename for appending extension
-
-   /* check if file name has .extension    */
-   /* if it does not, add .extension to it */
-   int i=len-1;
-   while(i > 0 && filename[i--] != '.');
-   //   printf("\n Comparing %s to %s", extension, filename+i+1);
-   if(strcmp(extension, filename+i+1)  )
-      strcat(filename1,extension);
-   if( (strm = fopen(filename1, access) ) == NULL )
-   {
-      printf("\n ERROR OPENING FILE %s (mode %s)", filename1,access);
-   }
-   delete(filename1);
-   return(strm);
+    // Open the file using the full filename.
+    strm = fopen(filename1, access);
+    if(strm == NULL)
+    {
+        printf("\n ERROR OPENING FILE %s (mode %s)", filename1, access);
+    }
+    
+    // IMPORTANT: Use delete[] (not delete) because we allocated with new[].
+    delete[] filename1;
+    return strm;
 }
 /* *********************************************************************** */
 int ok_check(void)                          /* GETS RESPONSE FROM USER      */

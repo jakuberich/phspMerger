@@ -105,10 +105,6 @@ IAEA_EXTERN_C IAEA_EXPORT
 void iaea_new_source(IAEA_I32 *source_ID, char *header_file,
                      const IAEA_I32 *access, IAEA_I32 *result,
                      int hf_length) {
-printf("iaea_new_source, ID = %llu", *source_ID);
-printf(" header_file = %s", header_file);
-printf(" access = %i\n", *access);
-
    if( !header_file ) {
        *result = 105; *source_ID = -1; return;
    } // null header file name
