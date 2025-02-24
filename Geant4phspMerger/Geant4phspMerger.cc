@@ -47,7 +47,8 @@ int main(int argc, char* argv[]) {
     IAEA_I32 res;
     IAEA_I32 accessRead = 1;
     
-    // Open each input file (base name provided, extension .IAEAheader is appended in iaea_new_source)
+    IAEA_I32 numExtraFloats = 0, numExtraInts = 0;
+    
     for (size_t i = 0; i < inputFiles.size(); i++) {
         IAEA_I32 src;
         int len = inputFiles[i].size();
@@ -65,6 +66,11 @@ int main(int argc, char* argv[]) {
         iaea_get_max_particles(&src, &res, &totParticles);
         mergedOrigHistories += origHist;
         mergedTotalParticles  += totParticles;
+
+        IAEA_I32 tempExtraFloats, tempExtraInts;
+        iaea_get_extra_numbers(&src, &tempExtraFloats, &tempExtraInts);
+        numExtraFloats = max(numExtraFloats, tempExtraFloats);
+        numExtraInts = max(numExtraInts, tempExtraInts);
     }
     
     if (inputSourceIDs.empty()) {
@@ -86,20 +92,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     
-    // Copy header from the first input source into the output.
     iaea_copy_header(&inputSourceIDs[0], &dest, &res);
-    if (res < 0) {
-        cerr << "Error copying header from first input." << endl;
-        // Clean up input and output.
-        for (size_t i = 0; i < inputSourceIDs.size(); i++) {
-            iaea_destroy_source(&inputSourceIDs[i], &res);
-        }
-        iaea_destroy_source(&dest, &res);
-        return 1;
+    iaea_set_extra_numbers(&dest, &numExtraFloats, &numExtraInts);
+    
+    IAEA_I32 extraLongTypes[NUM_EXTRA_LONG], extraFloatTypes[NUM_EXTRA_FLOAT];
+    IAEA_I32 result;
+    iaea_get_type_extra_variables(&inputSourceIDs[0], &result, extraLongTypes, extraFloatTypes);
+    
+    for (IAEA_I32 i = 0; i < numExtraInts; i++) {
+        iaea_set_type_extralong_variable(&dest, &i, &extraLongTypes[i]);
     }
     
-    // Process each input source sequentially.
-    // (The header already exists in the output, so we simply append the particle records.)
+    for (IAEA_I32 i = 0; i < numExtraFloats; i++) {
+        iaea_set_type_extrafloat_variable(&dest, &i, &extraFloatTypes[i]);
+    }
+    
+    
     for (size_t idx = 0; idx < inputSourceIDs.size(); idx++) {
         IAEA_I32 currSrc = inputSourceIDs[idx];
         
@@ -113,8 +121,7 @@ int main(int argc, char* argv[]) {
         
         IAEA_I64 count = 0;
         int errorCount = 0;
-        IAEA_I32 n_stat;
-        IAEA_I32 partType;
+        IAEA_I32 n_stat, partType;
         IAEA_Float E, wt, x, y, z, u, v, w;
         // In this merger we pass extra data through unchanged.
         float extraFloats[NUM_EXTRA_FLOAT];
