@@ -83,7 +83,7 @@ if __name__ == "__main__":
     input_files = [remove_extension(file, ext) for file in found_files]
 
     # Define the output path (this can be configurable as needed)
-    output_path = "merged"
+    output_path = "/mnt/e/merged"
 
     # Build the command: executable followed by input file paths and the output path
     cmd = [program_path] + input_files + [output_path]
